@@ -34,7 +34,7 @@ class DonationController extends Controller
                         ->orWhere('gateway_reference', 'like', "%{$search}%");
                 });
             })
-            ->latest()
+            ->orderByDesc('id')
             ->paginate($data['per_page'] ?? 15);
 
         return AdminDonationResource::collection($donations);
