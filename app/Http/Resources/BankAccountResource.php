@@ -9,7 +9,7 @@ class BankAccountResource extends JsonResource
 {
     public function toArray(Request $request): array
     {
-        return [
+        $data = [
             'id' => $this->id,
             'bank_name' => $this->bank_name,
             'account_name' => $this->account_name,
@@ -17,9 +17,14 @@ class BankAccountResource extends JsonResource
             'instructions' => $this->instructions,
             'is_enabled' => $this->is_enabled,
             'sort_order' => $this->sort_order,
-            'created_by' => $this->creator?->only(['id', 'name', 'email']),
-            'created_at' => $this->created_at,
-            'updated_at' => $this->updated_at,
         ];
+
+        if ($request->user()?->isActiveAdmin()) {
+            $data['created_by'] = $this->creator?->only(['id', 'name', 'email']);
+            $data['created_at'] = $this->created_at;
+            $data['updated_at'] = $this->updated_at;
+        }
+
+        return $data;
     }
 }
