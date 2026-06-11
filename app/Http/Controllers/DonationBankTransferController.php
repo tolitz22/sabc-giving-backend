@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Constants\DonationOptions;
 use App\Http\Requests\StoreBankTransferDonationRequest;
 use App\Jobs\SendBankTransferReceivedJob;
+use App\Models\BankAccount;
 use App\Models\Donation;
 use App\Services\RecaptchaService;
 use Illuminate\Http\JsonResponse;
@@ -19,7 +20,9 @@ class DonationBankTransferController extends Controller
         $recaptcha->verify($data['recaptcha_token'] ?? null, 'bank_transfer_submit', $request->ip());
 
         $disk = Storage::disk(config('filesystems.default'));
+        $bankAccount = BankAccount::findOrFail($data['bank_account_id']);
 
+        abort_unless($bankAccount->is_enabled, 422, 'This receiving bank is temporarily unavailable. Please choose another bank.');
         abort_unless($disk->exists($data['proof_file_path']), 422, 'Uploaded proof file was not found. Please upload it again.');
 
         $donation = Donation::create([
@@ -33,7 +36,10 @@ class DonationBankTransferController extends Controller
             'status' => DonationOptions::STATUS_UNDER_REVIEW,
             'gateway_reference' => $data['reference_number'],
             'metadata' => [
-                'bank_name' => $data['bank_name'],
+                'bank_account_id' => $bankAccount->id,
+                'bank_name' => $bankAccount->bank_name,
+                'account_name' => $bankAccount->account_name,
+                'account_number' => $bankAccount->account_number,
                 'transfer_date' => $data['transfer_date'],
             ],
         ]);

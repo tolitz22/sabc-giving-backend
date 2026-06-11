@@ -22,7 +22,7 @@ class StoreBankTransferDonationRequest extends FormRequest
             'amount' => ['required', 'numeric', 'min:20'],
             'category' => ['required', Rule::in(DonationOptions::CATEGORIES)],
             'note' => ['nullable', 'string', 'max:1000'],
-            'bank_name' => ['required', 'string', 'max:255'],
+            'bank_account_id' => ['required', 'integer', 'exists:bank_accounts,id'],
             'transfer_date' => ['required', 'date'],
             'reference_number' => ['required', 'string', 'max:100'],
             'proof_file_path' => ['required', 'string', 'regex:/^donations\/tmp\/\d{4}\/\d{2}\/\d{2}\/[0-9a-fA-F-]+\.(jpg|png|pdf)$/'],

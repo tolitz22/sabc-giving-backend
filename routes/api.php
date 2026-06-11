@@ -1,9 +1,11 @@
 <?php
 
 use App\Http\Controllers\Admin\AuthController;
+use App\Http\Controllers\Admin\BankAccountController as AdminBankAccountController;
 use App\Http\Controllers\Admin\DonationController as AdminDonationController;
 use App\Http\Controllers\Admin\DonationStatsController;
 use App\Http\Controllers\Admin\UserController as AdminUserController;
+use App\Http\Controllers\BankAccountController;
 use App\Http\Controllers\DonationBankTransferController;
 use App\Http\Controllers\DonationCheckoutController;
 use App\Http\Controllers\DonationProofUploadController;
@@ -15,6 +17,7 @@ Route::post('/donations/bank-transfer/proof-upload', DonationProofUploadControll
 Route::post('/donations/bank-transfer', DonationBankTransferController::class)->middleware('throttle:20,1');
 Route::post('/donations/checkout', DonationCheckoutController::class)->middleware('throttle:20,1');
 Route::get('/donations/{donation:uuid}', DonationStatusController::class);
+Route::get('/bank-accounts', BankAccountController::class);
 Route::post('/webhooks/paymongo', PaymongoWebhookController::class);
 
 Route::prefix('admin')->group(function () {
@@ -28,6 +31,11 @@ Route::prefix('admin')->group(function () {
         Route::patch('/users/{user}', [AdminUserController::class, 'update']);
         Route::patch('/users/{user}/disable', [AdminUserController::class, 'disable']);
         Route::patch('/users/{user}/enable', [AdminUserController::class, 'enable']);
+        Route::get('/bank-accounts', [AdminBankAccountController::class, 'index']);
+        Route::post('/bank-accounts', [AdminBankAccountController::class, 'store']);
+        Route::patch('/bank-accounts/{bankAccount}', [AdminBankAccountController::class, 'update']);
+        Route::patch('/bank-accounts/{bankAccount}/enable', [AdminBankAccountController::class, 'enable']);
+        Route::patch('/bank-accounts/{bankAccount}/disable', [AdminBankAccountController::class, 'disable']);
         Route::get('/donations', [AdminDonationController::class, 'index']);
         Route::get('/donations/{donation:uuid}', [AdminDonationController::class, 'show']);
         Route::patch('/donations/{donation:uuid}/verify', [AdminDonationController::class, 'verify']);

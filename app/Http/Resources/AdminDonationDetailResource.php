@@ -25,7 +25,10 @@ class AdminDonationDetailResource extends JsonResource
             'gateway_payment_id' => $this->gateway_payment_id,
             'gateway_reference' => $this->gateway_reference,
             'bank_transfer' => $this->giving_method === 'bank_transfer' ? [
+                'bank_account_id' => data_get($this->metadata, 'bank_account_id'),
                 'bank_name' => data_get($this->metadata, 'bank_name'),
+                'account_name' => data_get($this->metadata, 'account_name'),
+                'account_number' => data_get($this->metadata, 'account_number'),
                 'transfer_date' => data_get($this->metadata, 'transfer_date'),
                 'reference_number' => $this->gateway_reference,
             ] : null,
