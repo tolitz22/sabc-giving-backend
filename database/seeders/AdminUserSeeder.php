@@ -14,7 +14,7 @@ class AdminUserSeeder extends Seeder
             [
                 'name' => 'SABC Admin',
                 'password' => env('ADMIN_PASSWORD', 'change-me'),
-                'role' => 'admin',
+                'role' => User::ROLE_SUPER_ADMIN,
             ],
         );
     }

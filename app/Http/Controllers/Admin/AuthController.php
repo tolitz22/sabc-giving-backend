@@ -19,7 +19,7 @@ class AuthController extends Controller
 
         $user = \App\Models\User::where('email', $credentials['email'])->first();
 
-        if (! $user || ! Hash::check($credentials['password'], $user->password) || $user->role !== 'admin') {
+        if (! $user || ! Hash::check($credentials['password'], $user->password) || ! $user->isActiveAdmin()) {
             throw ValidationException::withMessages(['email' => ['Invalid admin credentials.']]);
         }
 
@@ -27,7 +27,10 @@ class AuthController extends Controller
 
         return response()->json([
             'token' => $user->createToken('admin-api')->plainTextToken,
-            'user' => $user->only(['id', 'name', 'email', 'role', 'last_login_at']),
+            'user' => [
+                ...$user->only(['id', 'name', 'email', 'role', 'last_login_at']),
+                'permissions' => $user->permissions(),
+            ],
         ]);
     }
 
@@ -40,6 +43,11 @@ class AuthController extends Controller
 
     public function me(Request $request): JsonResponse
     {
-        return response()->json(['user' => $request->user()->only(['id', 'name', 'email', 'role', 'last_login_at'])]);
+        return response()->json([
+            'user' => [
+                ...$request->user()->only(['id', 'name', 'email', 'role', 'last_login_at']),
+                'permissions' => $request->user()->permissions(),
+            ],
+        ]);
     }
 }

@@ -3,6 +3,7 @@
 use App\Http\Controllers\Admin\AuthController;
 use App\Http\Controllers\Admin\DonationController as AdminDonationController;
 use App\Http\Controllers\Admin\DonationStatsController;
+use App\Http\Controllers\Admin\UserController as AdminUserController;
 use App\Http\Controllers\DonationBankTransferController;
 use App\Http\Controllers\DonationCheckoutController;
 use App\Http\Controllers\DonationProofUploadController;
@@ -19,9 +20,14 @@ Route::post('/webhooks/paymongo', PaymongoWebhookController::class);
 Route::prefix('admin')->group(function () {
     Route::post('/login', [AuthController::class, 'login']);
 
-    Route::middleware('auth:sanctum')->group(function () {
+    Route::middleware(['auth:sanctum', 'active.admin'])->group(function () {
         Route::post('/logout', [AuthController::class, 'logout']);
         Route::get('/me', [AuthController::class, 'me']);
+        Route::get('/users', [AdminUserController::class, 'index']);
+        Route::post('/users', [AdminUserController::class, 'store']);
+        Route::patch('/users/{user}', [AdminUserController::class, 'update']);
+        Route::patch('/users/{user}/disable', [AdminUserController::class, 'disable']);
+        Route::patch('/users/{user}/enable', [AdminUserController::class, 'enable']);
         Route::get('/donations', [AdminDonationController::class, 'index']);
         Route::get('/donations/{donation:uuid}', [AdminDonationController::class, 'show']);
         Route::patch('/donations/{donation:uuid}/verify', [AdminDonationController::class, 'verify']);

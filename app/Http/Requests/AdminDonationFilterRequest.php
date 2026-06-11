@@ -10,7 +10,7 @@ class AdminDonationFilterRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()?->role === 'admin';
+        return $this->user()?->hasPermission('donations.view') === true;
     }
 
     public function rules(): array

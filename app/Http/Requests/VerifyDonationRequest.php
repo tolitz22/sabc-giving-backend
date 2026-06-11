@@ -8,7 +8,7 @@ class VerifyDonationRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()?->role === 'admin';
+        return $this->user()?->hasPermission('donations.verify') === true;
     }
 
     public function rules(): array

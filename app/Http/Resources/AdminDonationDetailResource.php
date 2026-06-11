@@ -29,7 +29,9 @@ class AdminDonationDetailResource extends JsonResource
                 'mime_type' => $this->proof_mime_type,
                 'size' => $this->proof_size,
                 'expires_at' => $this->proof_expires_at,
-                'temporary_url' => Storage::disk(config('filesystems.default'))->temporaryUrl($this->proof_file_path, now()->addMinutes(15)),
+                'temporary_url' => $request->user()?->hasPermission('proofs.view')
+                    ? Storage::disk(config('filesystems.default'))->temporaryUrl($this->proof_file_path, now()->addMinutes(15))
+                    : null,
             ] : null,
             'verified_by' => $this->verifier?->only(['id', 'name', 'email']),
             'verified_at' => $this->verified_at,

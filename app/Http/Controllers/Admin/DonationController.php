@@ -43,6 +43,8 @@ class DonationController extends Controller
 
     public function show(Donation $donation): AdminDonationDetailResource
     {
+        abort_unless(request()->user()->hasPermission('donations.view'), 403);
+
         return new AdminDonationDetailResource($donation->load(['events', 'verifier', 'rejecter', 'proofDeleter']));
     }
 
@@ -89,6 +91,8 @@ class DonationController extends Controller
 
     public function deleteProof(VerifyDonationRequest $request, Donation $donation): JsonResponse
     {
+        abort_unless($request->user()->hasPermission('donations.delete_proof'), 403);
+
         $deleted = $donation->deleteProofFile($request->user()->id);
 
         return response()->json([

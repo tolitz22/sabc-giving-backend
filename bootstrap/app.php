@@ -13,6 +13,9 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware) {
         $middleware->append(\Illuminate\Http\Middleware\HandleCors::class);
+        $middleware->alias([
+            'active.admin' => \App\Http\Middleware\EnsureActiveAdmin::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
         //

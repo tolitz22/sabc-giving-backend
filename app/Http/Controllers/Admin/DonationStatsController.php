@@ -6,12 +6,15 @@ use App\Constants\DonationOptions;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\DonationStatsResource;
 use App\Models\Donation;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class DonationStatsController extends Controller
 {
-    public function __invoke(): DonationStatsResource
+    public function __invoke(Request $request): DonationStatsResource
     {
+        abort_unless($request->user()->hasPermission('donations.view'), 403);
+
         $paid = Donation::where('status', DonationOptions::STATUS_PAID);
         $summary = Donation::query()
             ->selectRaw('count(*) as total_donations')
