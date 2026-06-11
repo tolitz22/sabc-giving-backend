@@ -11,6 +11,16 @@ use Illuminate\Validation\Rule;
 
 class UserController extends Controller
 {
+    private function isLastActiveSuperAdmin(User $user): bool
+    {
+        return $user->role === User::ROLE_SUPER_ADMIN
+            && ! $user->disabled_at
+            && User::where('role', User::ROLE_SUPER_ADMIN)
+                ->whereNull('disabled_at')
+                ->whereKeyNot($user->id)
+                ->doesntExist();
+    }
+
     public function index(Request $request)
     {
         abort_unless($request->user()->hasPermission('users.view'), 403);
@@ -54,6 +64,12 @@ class UserController extends Controller
             'password' => ['nullable', 'string', 'min:8'],
         ]);
 
+        abort_if(
+            $this->isLastActiveSuperAdmin($user) && $data['role'] !== User::ROLE_SUPER_ADMIN,
+            422,
+            'You cannot change the role of the last active super admin.'
+        );
+
         $user->fill([
             'name' => $data['name'],
             'email' => $data['email'],
@@ -75,6 +91,11 @@ class UserController extends Controller
     {
         abort_unless($request->user()->hasPermission('users.disable'), 403);
         abort_if($request->user()->is($user), 422, 'You cannot disable your own account.');
+        abort_if(
+            $this->isLastActiveSuperAdmin($user),
+            422,
+            'You cannot disable the last active super admin.'
+        );
 
         $user->forceFill(['disabled_at' => now()])->save();
         $user->tokens()->delete();

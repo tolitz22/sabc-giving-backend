@@ -11,16 +11,16 @@ use App\Http\Controllers\DonationStatusController;
 use App\Http\Controllers\PaymongoWebhookController;
 use Illuminate\Support\Facades\Route;
 
-Route::post('/donations/bank-transfer/proof-upload', DonationProofUploadController::class);
-Route::post('/donations/bank-transfer', DonationBankTransferController::class);
-Route::post('/donations/checkout', DonationCheckoutController::class);
+Route::post('/donations/bank-transfer/proof-upload', DonationProofUploadController::class)->middleware('throttle:20,1');
+Route::post('/donations/bank-transfer', DonationBankTransferController::class)->middleware('throttle:20,1');
+Route::post('/donations/checkout', DonationCheckoutController::class)->middleware('throttle:20,1');
 Route::get('/donations/{donation:uuid}', DonationStatusController::class);
 Route::post('/webhooks/paymongo', PaymongoWebhookController::class);
 
 Route::prefix('admin')->group(function () {
-    Route::post('/login', [AuthController::class, 'login']);
+    Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:5,1');
 
-    Route::middleware(['auth:sanctum', 'active.admin'])->group(function () {
+    Route::middleware(['auth:sanctum', 'active.admin', 'throttle:120,1'])->group(function () {
         Route::post('/logout', [AuthController::class, 'logout']);
         Route::get('/me', [AuthController::class, 'me']);
         Route::get('/users', [AdminUserController::class, 'index']);
