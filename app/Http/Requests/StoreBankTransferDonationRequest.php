@@ -29,6 +29,7 @@ class StoreBankTransferDonationRequest extends FormRequest
             'proof_original_name' => ['required', 'string', 'max:255'],
             'proof_mime_type' => ['required', 'string', 'in:image/jpeg,image/png,application/pdf'],
             'proof_size' => ['required', 'integer', 'min:1', 'max:5242880'],
+            'recaptcha_token' => ['nullable', 'string'],
         ];
     }
 }

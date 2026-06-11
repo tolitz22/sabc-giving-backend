@@ -6,14 +6,16 @@ use App\Constants\DonationOptions;
 use App\Http\Requests\CreateCheckoutDonationRequest;
 use App\Models\Donation;
 use App\Services\PaymongoService;
+use App\Services\RecaptchaService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Log;
 
 class DonationCheckoutController extends Controller
 {
-    public function __invoke(CreateCheckoutDonationRequest $request, PaymongoService $paymongo): JsonResponse
+    public function __invoke(CreateCheckoutDonationRequest $request, PaymongoService $paymongo, RecaptchaService $recaptcha): JsonResponse
     {
         $data = $request->validated();
+        $recaptcha->verify($data['recaptcha_token'] ?? null, 'checkout_create', $request->ip());
 
         $donation = Donation::create([
             'donor_name' => $data['donor_name'],

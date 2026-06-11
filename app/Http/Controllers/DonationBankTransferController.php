@@ -6,15 +6,18 @@ use App\Constants\DonationOptions;
 use App\Http\Requests\StoreBankTransferDonationRequest;
 use App\Jobs\SendBankTransferReceivedJob;
 use App\Models\Donation;
+use App\Services\RecaptchaService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 
 class DonationBankTransferController extends Controller
 {
-    public function __invoke(StoreBankTransferDonationRequest $request): JsonResponse
+    public function __invoke(StoreBankTransferDonationRequest $request, RecaptchaService $recaptcha): JsonResponse
     {
         $data = $request->validated();
+        $recaptcha->verify($data['recaptcha_token'] ?? null, 'bank_transfer_submit', $request->ip());
+
         $disk = Storage::disk(config('filesystems.default'));
 
         abort_unless($disk->exists($data['proof_file_path']), 422, 'Uploaded proof file was not found. Please upload it again.');

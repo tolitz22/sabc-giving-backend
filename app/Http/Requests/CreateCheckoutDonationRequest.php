@@ -23,6 +23,7 @@ class CreateCheckoutDonationRequest extends FormRequest
             'category' => ['required', Rule::in(DonationOptions::CATEGORIES)],
             'giving_method' => ['required', Rule::in([DonationOptions::METHOD_CARD, DonationOptions::METHOD_EWALLET])],
             'note' => ['nullable', 'string', 'max:1000'],
+            'recaptcha_token' => ['nullable', 'string'],
         ];
     }
 }

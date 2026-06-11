@@ -22,6 +22,7 @@ class CreateProofUploadRequest extends FormRequest
                 'application/pdf',
             ])],
             'size' => ['required', 'integer', 'min:1', 'max:5242880'],
+            'recaptcha_token' => ['nullable', 'string'],
         ];
     }
 }

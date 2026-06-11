@@ -3,15 +3,18 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\CreateProofUploadRequest;
+use App\Services\RecaptchaService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 class DonationProofUploadController extends Controller
 {
-    public function __invoke(CreateProofUploadRequest $request): JsonResponse
+    public function __invoke(CreateProofUploadRequest $request, RecaptchaService $recaptcha): JsonResponse
     {
         $data = $request->validated();
+        $recaptcha->verify($data['recaptcha_token'] ?? null, 'proof_upload', $request->ip());
+
         $extension = match ($data['content_type']) {
             'image/jpeg' => 'jpg',
             'image/png' => 'png',

@@ -38,4 +38,9 @@ return [
         'base_url' => env('PAYMONGO_API_BASE', 'https://api.paymongo.com/v2'),
     ],
 
+    'recaptcha' => [
+        'secret_key' => env('RECAPTCHA_SECRET_KEY'),
+        'minimum_score' => env('RECAPTCHA_MINIMUM_SCORE', 0.5),
+    ],
+
 ];
