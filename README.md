@@ -51,7 +51,7 @@ SESSION_DOMAIN=
 PAYMONGO_PUBLIC_KEY=
 PAYMONGO_SECRET_KEY=
 PAYMONGO_WEBHOOK_SECRET=
-PAYMONGO_API_BASE=https://api.paymongo.com/v1
+PAYMONGO_API_BASE=https://api.paymongo.com/v2
 
 FILESYSTEM_DISK=r2
 R2_ACCESS_KEY_ID=
@@ -61,14 +61,16 @@ R2_ENDPOINT=
 R2_REGION=auto
 
 MAIL_MAILER=smtp
-MAIL_HOST=
-MAIL_PORT=
-MAIL_USERNAME=
+MAIL_HOST=smtp.gmail.com
+MAIL_PORT=587
+MAIL_USERNAME=sabcpmzoom@gmail.com
 MAIL_PASSWORD=
-MAIL_ENCRYPTION=
-MAIL_FROM_ADDRESS=
+MAIL_ENCRYPTION=tls
+MAIL_FROM_ADDRESS=sabcpmzoom@gmail.com
 MAIL_FROM_NAME="Scripture Alone Baptist Church"
 ```
+
+For Gmail SMTP, `MAIL_PASSWORD` must be a Google App Password, not the normal Gmail login password. Enable 2-Step Verification on the Gmail account, create an App Password for Mail, paste the generated 16-character password into Railway, then redeploy the web and worker services.
 
 ## API
 
