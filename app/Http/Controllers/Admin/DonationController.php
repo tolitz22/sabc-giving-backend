@@ -58,7 +58,7 @@ class DonationController extends Controller
             ->first();
 
         $latestDonation = Donation::query()
-            ->select(['uuid', 'donor_name', 'amount', 'category', 'giving_method', 'status', 'created_at'])
+            ->select(['uuid', 'donor_name', 'is_anonymous', 'amount', 'category', 'giving_method', 'status', 'created_at'])
             ->latest('id')
             ->first();
 
@@ -73,6 +73,8 @@ class DonationController extends Controller
                 'latest_donation' => $latestDonation ? [
                     'uuid' => $latestDonation->uuid,
                     'donor_name' => $latestDonation->donor_name,
+                    'donor_display_name' => $latestDonation->donorDisplayName(),
+                    'is_anonymous' => $latestDonation->is_anonymous,
                     'amount' => $latestDonation->amount,
                     'category' => $latestDonation->category,
                     'giving_method' => $latestDonation->giving_method,

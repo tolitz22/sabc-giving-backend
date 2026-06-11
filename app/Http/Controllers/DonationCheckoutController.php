@@ -21,6 +21,7 @@ class DonationCheckoutController extends Controller
             'donor_name' => $data['donor_name'],
             'donor_email' => $data['donor_email'],
             'donor_mobile' => $data['donor_mobile'] ?? null,
+            'is_anonymous' => (bool) ($data['is_anonymous'] ?? false),
             'amount' => $data['amount'],
             'category' => $data['category'],
             'giving_method' => $data['giving_method'],

@@ -11,7 +11,8 @@ class DonationStatusResource extends JsonResource
     {
         return [
             'uuid' => $this->uuid,
-            'donor_name' => $this->donor_name,
+            'donor_name' => $this->donorDisplayName(),
+            'is_anonymous' => $this->is_anonymous,
             'amount' => $this->amount,
             'category' => $this->category,
             'giving_method' => $this->giving_method,

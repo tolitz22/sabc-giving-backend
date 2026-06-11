@@ -17,6 +17,7 @@ class DonationFactory extends Factory
             'donor_name' => fake()->name(),
             'donor_email' => fake()->safeEmail(),
             'donor_mobile' => '09'.fake()->numerify('#########'),
+            'is_anonymous' => false,
             'amount' => fake()->randomFloat(2, 100, 10000),
             'category' => fake()->randomElement(DonationOptions::CATEGORIES),
             'giving_method' => fake()->randomElement(DonationOptions::METHODS),

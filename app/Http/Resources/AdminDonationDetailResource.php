@@ -13,8 +13,10 @@ class AdminDonationDetailResource extends JsonResource
         return [
             'uuid' => $this->uuid,
             'donor_name' => $this->donor_name,
+            'donor_display_name' => $this->donorDisplayName(),
             'donor_email' => $this->donor_email,
             'donor_mobile' => $this->donor_mobile,
+            'is_anonymous' => $this->is_anonymous,
             'amount' => $this->amount,
             'category' => $this->category,
             'giving_method' => $this->giving_method,

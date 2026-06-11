@@ -19,6 +19,7 @@ class Donation extends Model
         'donor_name',
         'donor_email',
         'donor_mobile',
+        'is_anonymous',
         'amount',
         'category',
         'giving_method',
@@ -49,6 +50,7 @@ class Donation extends Model
         return [
             'amount' => 'decimal:2',
             'metadata' => 'array',
+            'is_anonymous' => 'boolean',
             'paid_at' => 'datetime',
             'verified_at' => 'datetime',
             'proof_expires_at' => 'datetime',
@@ -94,6 +96,11 @@ class Donation extends Model
             'description' => $description,
             'payload' => $payload,
         ]);
+    }
+
+    public function donorDisplayName(): string
+    {
+        return $this->is_anonymous ? 'Anonymous donor' : $this->donor_name;
     }
 
     public function markPaid(?string $paymentId = null, ?string $reference = null): void
