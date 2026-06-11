@@ -17,7 +17,7 @@ class PaymongoWebhookController extends Controller
     public function __invoke(Request $request, PaymongoService $paymongo): JsonResponse
     {
         $payload = $request->json()->all();
-        $eventType = data_get($payload, 'data.attributes.type');
+        $eventType = data_get($payload, 'data.attributes.type') ?: data_get($payload, 'data.type');
 
         $log = PaymentWebhookLog::create([
             'provider' => 'paymongo',

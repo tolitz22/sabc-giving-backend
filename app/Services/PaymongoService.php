@@ -16,10 +16,11 @@ class PaymongoService
         $methodTypes = $donation->giving_method === DonationOptions::METHOD_CARD
             ? ['card']
             : ['gcash', 'paymaya', 'qrph'];
+        $baseUrl = preg_replace('#/v1$#', '/v2', rtrim((string) config('services.paymongo.base_url'), '/'));
 
         $response = Http::withBasicAuth((string) config('services.paymongo.secret_key'), '')
             ->acceptJson()
-            ->post(rtrim((string) config('services.paymongo.base_url'), '/').'/checkout_sessions', [
+            ->post($baseUrl.'/checkout_sessions', [
                 'data' => [
                     'attributes' => [
                         'billing' => [
@@ -34,9 +35,11 @@ class PaymongoService
                             'quantity' => 1,
                         ]],
                         'payment_method_types' => $methodTypes,
-                        'success_url' => rtrim((string) config('app.frontend_url'), '/').'/giving/success?donation='.$donation->uuid,
-                        'cancel_url' => rtrim((string) config('app.frontend_url'), '/').'/giving/cancelled?donation='.$donation->uuid,
+                        'success_url' => rtrim((string) config('app.frontend_url'), '/').'/give/success?donation='.$donation->uuid,
+                        'cancel_url' => rtrim((string) config('app.frontend_url'), '/').'/give/cancelled?donation='.$donation->uuid,
                         'description' => 'Church giving: '.$donation->category,
+                        'reference_number' => $donation->uuid,
+                        'send_email_receipt' => true,
                         'metadata' => [
                             'donation_id' => (string) $donation->id,
                             'donation_uuid' => $donation->uuid,
@@ -92,17 +95,18 @@ class PaymongoService
 
     public function parseCheckoutPaidEvent(array $payload): array
     {
-        $attributes = data_get($payload, 'data.attributes', []);
-        $checkout = data_get($attributes, 'data.attributes', []);
+        $attributes = data_get($payload, 'data.attributes', data_get($payload, 'data', []));
+        $checkout = data_get($attributes, 'data.attributes', data_get($attributes, 'data', []));
+        $checkoutAttributes = data_get($checkout, 'attributes', $checkout);
 
         return [
-            'event_id' => data_get($payload, 'data.id'),
-            'event_type' => data_get($attributes, 'type'),
+            'event_id' => data_get($payload, 'data.id') ?: data_get($payload, 'id'),
+            'event_type' => data_get($attributes, 'type') ?: data_get($payload, 'data.type'),
             'checkout_id' => data_get($checkout, 'id') ?: data_get($attributes, 'data.id'),
-            'payment_id' => data_get($checkout, 'payments.0.id') ?: data_get($checkout, 'payment_intent.id'),
-            'reference' => data_get($checkout, 'reference_number') ?: data_get($checkout, 'payments.0.attributes.external_reference_number'),
-            'donation_id' => data_get($checkout, 'metadata.donation_id'),
-            'donation_uuid' => data_get($checkout, 'metadata.donation_uuid'),
+            'payment_id' => data_get($checkoutAttributes, 'payments.0.id') ?: data_get($checkoutAttributes, 'payment_intent.id'),
+            'reference' => data_get($checkoutAttributes, 'reference_number') ?: data_get($checkoutAttributes, 'payments.0.attributes.external_reference_number'),
+            'donation_id' => data_get($checkoutAttributes, 'metadata.donation_id'),
+            'donation_uuid' => data_get($checkoutAttributes, 'metadata.donation_uuid') ?: data_get($checkoutAttributes, 'reference_number'),
         ];
     }
 }
