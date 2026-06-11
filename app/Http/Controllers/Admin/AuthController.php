@@ -23,9 +23,11 @@ class AuthController extends Controller
             throw ValidationException::withMessages(['email' => ['Invalid admin credentials.']]);
         }
 
+        $user->forceFill(['last_login_at' => now()])->save();
+
         return response()->json([
             'token' => $user->createToken('admin-api')->plainTextToken,
-            'user' => $user->only(['id', 'name', 'email', 'role']),
+            'user' => $user->only(['id', 'name', 'email', 'role', 'last_login_at']),
         ]);
     }
 
@@ -38,6 +40,6 @@ class AuthController extends Controller
 
     public function me(Request $request): JsonResponse
     {
-        return response()->json(['user' => $request->user()->only(['id', 'name', 'email', 'role'])]);
+        return response()->json(['user' => $request->user()->only(['id', 'name', 'email', 'role', 'last_login_at'])]);
     }
 }

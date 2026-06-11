@@ -34,6 +34,7 @@ class DonationController extends Controller
                         ->orWhere('gateway_reference', 'like', "%{$search}%");
                 });
             })
+            ->with(['verifier:id,name,email', 'rejecter:id,name,email', 'proofDeleter:id,name,email'])
             ->orderByDesc('id')
             ->paginate($data['per_page'] ?? 15);
 
@@ -42,7 +43,7 @@ class DonationController extends Controller
 
     public function show(Donation $donation): AdminDonationDetailResource
     {
-        return new AdminDonationDetailResource($donation->load(['events', 'verifier']));
+        return new AdminDonationDetailResource($donation->load(['events', 'verifier', 'rejecter', 'proofDeleter']));
     }
 
     public function verify(VerifyDonationRequest $request, Donation $donation): JsonResponse
@@ -71,6 +72,8 @@ class DonationController extends Controller
         $donation->forceFill([
             'status' => DonationOptions::STATUS_REJECTED,
             'rejected_reason' => $request->validated('rejected_reason'),
+            'rejected_by' => $request->user()->id,
+            'rejected_at' => now(),
         ])->save();
 
         $donation->addEvent('bank_transfer_rejected', 'Bank transfer rejected by admin.', [

@@ -33,10 +33,14 @@ class Donation extends Model
         'proof_mime_type',
         'proof_size',
         'proof_expires_at',
+        'proof_deleted_by',
+        'proof_deleted_at',
         'verified_by',
         'verified_at',
         'paid_at',
         'rejected_reason',
+        'rejected_by',
+        'rejected_at',
         'metadata',
     ];
 
@@ -48,6 +52,8 @@ class Donation extends Model
             'paid_at' => 'datetime',
             'verified_at' => 'datetime',
             'proof_expires_at' => 'datetime',
+            'proof_deleted_at' => 'datetime',
+            'rejected_at' => 'datetime',
         ];
     }
 
@@ -69,6 +75,16 @@ class Donation extends Model
     public function verifier(): BelongsTo
     {
         return $this->belongsTo(User::class, 'verified_by');
+    }
+
+    public function rejecter(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'rejected_by');
+    }
+
+    public function proofDeleter(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'proof_deleted_by');
     }
 
     public function addEvent(string $type, ?string $description = null, ?array $payload = null): DonationEvent
@@ -106,6 +122,8 @@ class Donation extends Model
             'proof_mime_type' => null,
             'proof_size' => null,
             'proof_expires_at' => null,
+            'proof_deleted_by' => $adminId,
+            'proof_deleted_at' => now(),
         ])->save();
 
         $this->addEvent($eventType, 'Temporary proof file deleted.', [
