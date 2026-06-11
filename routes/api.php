@@ -37,6 +37,7 @@ Route::prefix('admin')->group(function () {
         Route::patch('/bank-accounts/{bankAccount}/enable', [AdminBankAccountController::class, 'enable']);
         Route::patch('/bank-accounts/{bankAccount}/disable', [AdminBankAccountController::class, 'disable']);
         Route::get('/donations', [AdminDonationController::class, 'index']);
+        Route::get('/donations/activity', [AdminDonationController::class, 'activity']);
         Route::get('/donations/{donation:uuid}', [AdminDonationController::class, 'show']);
         Route::patch('/donations/{donation:uuid}/verify', [AdminDonationController::class, 'verify']);
         Route::patch('/donations/{donation:uuid}/reject', [AdminDonationController::class, 'reject']);

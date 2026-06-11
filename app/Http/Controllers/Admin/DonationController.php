@@ -41,6 +41,48 @@ class DonationController extends Controller
         return AdminDonationResource::collection($donations);
     }
 
+    public function activity(): JsonResponse
+    {
+        abort_unless(request()->user()->hasPermission('donations.view'), 403);
+
+        $summary = Donation::query()
+            ->selectRaw('count(*) as total_donations')
+            ->selectRaw('coalesce(sum(case when status = ? then amount else 0 end), 0) as total_paid_amount', [DonationOptions::STATUS_PAID])
+            ->selectRaw('sum(case when giving_method = ? and status = ? then 1 else 0 end) as pending_bank_transfers', [
+                DonationOptions::METHOD_BANK_TRANSFER,
+                DonationOptions::STATUS_UNDER_REVIEW,
+            ])
+            ->selectRaw('sum(case when status = ? then 1 else 0 end) as rejected_donations', [DonationOptions::STATUS_REJECTED])
+            ->selectRaw('max(id) as latest_donation_id')
+            ->selectRaw('max(updated_at) as latest_activity_at')
+            ->first();
+
+        $latestDonation = Donation::query()
+            ->select(['uuid', 'donor_name', 'amount', 'category', 'giving_method', 'status', 'created_at'])
+            ->latest('id')
+            ->first();
+
+        return response()->json([
+            'data' => [
+                'total_donations' => (int) $summary->total_donations,
+                'total_paid_amount' => (float) $summary->total_paid_amount,
+                'pending_bank_transfers' => (int) $summary->pending_bank_transfers,
+                'rejected_donations' => (int) $summary->rejected_donations,
+                'latest_donation_id' => $summary->latest_donation_id ? (int) $summary->latest_donation_id : null,
+                'latest_activity_at' => $summary->latest_activity_at,
+                'latest_donation' => $latestDonation ? [
+                    'uuid' => $latestDonation->uuid,
+                    'donor_name' => $latestDonation->donor_name,
+                    'amount' => $latestDonation->amount,
+                    'category' => $latestDonation->category,
+                    'giving_method' => $latestDonation->giving_method,
+                    'status' => $latestDonation->status,
+                    'created_at' => $latestDonation->created_at,
+                ] : null,
+            ],
+        ]);
+    }
+
     public function show(Donation $donation): AdminDonationDetailResource
     {
         abort_unless(request()->user()->hasPermission('donations.view'), 403);
