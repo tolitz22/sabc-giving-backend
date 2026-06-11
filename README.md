@@ -38,6 +38,10 @@ APP_DEBUG=false
 APP_URL=
 FRONTEND_URL=https://your-frontend-domain.com
 
+LOG_CHANNEL=stack
+LOG_STACK=stderr
+LOG_LEVEL=info
+
 DB_CONNECTION=mysql
 DB_HOST=
 DB_PORT=3306
@@ -108,6 +112,29 @@ Run a worker process for queued email:
 
 ```bash
 php artisan queue:work --sleep=3 --tries=3 --timeout=90
+```
+
+## Monitoring
+
+Production logs include structured monitoring events for security and operations. Keep `LOG_STACK=stderr` on Railway so these events appear in the service logs.
+
+Watch for these event names:
+
+```text
+admin_login_failed
+admin_login_succeeded
+queue_job_failed
+```
+
+Failed admin logins are logged with the attempted email, IP address, user agent, and whether the account exists or is disabled. Failed queue jobs are logged with the queue connection, queue name, job id, job class, attempt count, exception class, and exception message.
+
+For alerts, you can add Laravel's Slack log channel to the stack:
+
+```env
+LOG_CHANNEL=stack
+LOG_STACK=stderr,slack
+LOG_SLACK_WEBHOOK_URL=https://hooks.slack.com/services/...
+LOG_LEVEL=warning
 ```
 
 ## Cloudflare R2

@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
 
 class AuthController extends Controller
@@ -20,10 +21,26 @@ class AuthController extends Controller
         $user = \App\Models\User::where('email', $credentials['email'])->first();
 
         if (! $user || ! Hash::check($credentials['password'], $user->password) || ! $user->isActiveAdmin()) {
+            Log::warning('Admin login failed', [
+                'email' => $credentials['email'],
+                'ip' => $request->ip(),
+                'user_agent' => $request->userAgent(),
+                'account_exists' => (bool) $user,
+                'account_disabled' => $user ? ! $user->isActiveAdmin() : null,
+                'event' => 'admin_login_failed',
+            ]);
+
             throw ValidationException::withMessages(['email' => ['Invalid admin credentials.']]);
         }
 
         $user->forceFill(['last_login_at' => now()])->save();
+
+        Log::info('Admin login succeeded', [
+            'admin_id' => $user->id,
+            'email' => $user->email,
+            'ip' => $request->ip(),
+            'event' => 'admin_login_succeeded',
+        ]);
 
         return response()->json([
             'token' => $user->createToken('admin-api')->plainTextToken,
