@@ -8,7 +8,8 @@
         "php": "^8.2",
         "laravel/framework": ">=12.60 <13.0",
         "laravel/sanctum": "^4.3",
-        "league/flysystem-aws-s3-v3": "^3.34"
+        "league/flysystem-aws-s3-v3": "^3.34",
+        "resend/resend-laravel": "^1.4"
     },
     "require-dev": {
         "fakerphp/faker": "^1.23",
