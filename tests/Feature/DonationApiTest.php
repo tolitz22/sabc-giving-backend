@@ -6,6 +6,7 @@ use App\Constants\DonationOptions;
 use App\Jobs\SendBankTransferReceivedJob;
 use App\Jobs\SendDonationReceiptJob;
 use App\Jobs\SendDonationRejectedJob;
+use App\Models\BankAccount;
 use App\Models\Donation;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -25,6 +26,13 @@ class DonationApiTest extends TestCase
         Storage::fake('r2');
         config(['filesystems.default' => 'r2']);
         Storage::disk('r2')->put('donations/tmp/2026/06/11/019731b9-9b7a-7381-8a08-30cfb74aa5f6.jpg', 'proof');
+        $bankAccount = BankAccount::create([
+            'bank_name' => 'BDO',
+            'account_name' => 'Scripture Alone Baptist Church',
+            'account_number' => '1234567890',
+            'is_enabled' => true,
+            'sort_order' => 1,
+        ]);
 
         $response = $this->postJson('/api/donations/bank-transfer', [
             'donor_name' => 'Juan Dela Cruz',
@@ -32,6 +40,7 @@ class DonationApiTest extends TestCase
             'donor_mobile' => '09171234567',
             'amount' => 500,
             'category' => 'Missions',
+            'bank_account_id' => $bankAccount->id,
             'bank_name' => 'BDO',
             'transfer_date' => now()->toDateString(),
             'reference_number' => 'REF123',
@@ -210,6 +219,80 @@ class DonationApiTest extends TestCase
         Storage::disk('r2')->assertMissing('donations/2026/06/delete/proof.jpg');
         $this->assertNull($donation->fresh()->proof_file_path);
         $this->assertSame(DonationOptions::STATUS_UNDER_REVIEW, $donation->fresh()->status);
+    }
+
+    public function test_admin_report_summary_supports_filters_and_breakdowns(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+        Sanctum::actingAs($admin);
+
+        Donation::factory()->paid()->create([
+            'amount' => 1000,
+            'category' => 'Missions',
+            'giving_method' => DonationOptions::METHOD_CARD,
+            'created_at' => '2026-06-05 10:00:00',
+            'paid_at' => '2026-06-05 10:30:00',
+        ]);
+        Donation::factory()->paid()->create([
+            'amount' => 2500,
+            'category' => 'Missions',
+            'giving_method' => DonationOptions::METHOD_BANK_TRANSFER,
+            'is_anonymous' => true,
+            'created_at' => '2026-06-06 10:00:00',
+            'paid_at' => '2026-06-06 10:30:00',
+        ]);
+        Donation::factory()->paid()->create([
+            'amount' => 700,
+            'category' => 'Benevolence',
+            'created_at' => '2026-05-01 10:00:00',
+            'paid_at' => '2026-05-01 10:30:00',
+        ]);
+        Donation::factory()->bankTransferUnderReview()->create([
+            'category' => 'Missions',
+            'created_at' => '2026-06-07 10:00:00',
+        ]);
+
+        $this->getJson('/api/admin/reports/summary?date_from=2026-06-01&date_to=2026-06-30&category=Missions')
+            ->assertOk()
+            ->assertJsonPath('data.total_donations', 3)
+            ->assertJsonPath('data.total_paid_amount', 3500)
+            ->assertJsonPath('data.average_paid_amount', 1750)
+            ->assertJsonPath('data.pending_bank_transfers', 1)
+            ->assertJsonPath('data.totals_by_category.0.category', 'Missions')
+            ->assertJsonPath('data.monthly_totals.0.month', '2026-06')
+            ->assertJsonPath('data.daily_totals.0.day', '2026-06-05')
+            ->assertJsonPath('data.anonymous_totals.0.label', 'Identified')
+            ->assertJsonPath('data.recent_largest_donations.0.amount', 2500);
+    }
+
+    public function test_admin_can_download_donation_report_as_csv_and_xlsx(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+        Sanctum::actingAs($admin);
+
+        Donation::factory()->paid()->create([
+            'donor_name' => 'Private Donor',
+            'donor_email' => 'private@example.com',
+            'is_anonymous' => true,
+            'amount' => 1200,
+            'category' => 'Missions',
+            'created_at' => '2026-06-05 10:00:00',
+            'paid_at' => '2026-06-05 10:30:00',
+        ]);
+
+        $csv = $this->get('/api/admin/reports/donations/export.csv?date_from=2026-06-01&date_to=2026-06-30');
+        $csv->assertOk();
+        $csv->assertHeader('content-type', 'text/csv; charset=UTF-8');
+        $csvContent = $csv->streamedContent();
+        $this->assertStringContainsString('Donation UUID', $csvContent);
+        $this->assertStringContainsString('Anonymous donor', $csvContent);
+        $this->assertStringContainsString('Contact retained privately', $csvContent);
+        $this->assertStringNotContainsString('private@example.com', $csvContent);
+
+        $xlsx = $this->get('/api/admin/reports/donations/export.xlsx?date_from=2026-06-01&date_to=2026-06-30');
+        $xlsx->assertOk();
+        $xlsx->assertHeader('content-type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        $this->assertStringStartsWith('PK', $xlsx->streamedContent());
     }
 
     public function test_public_status_endpoint_does_not_expose_sensitive_data(): void

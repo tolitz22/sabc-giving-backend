@@ -4,6 +4,7 @@ use App\Http\Controllers\Admin\AuthController;
 use App\Http\Controllers\Admin\BankAccountController as AdminBankAccountController;
 use App\Http\Controllers\Admin\DonationController as AdminDonationController;
 use App\Http\Controllers\Admin\DonationStatsController;
+use App\Http\Controllers\Admin\ReportController;
 use App\Http\Controllers\Admin\UserController as AdminUserController;
 use App\Http\Controllers\BankAccountController;
 use App\Http\Controllers\DonationBankTransferController;
@@ -43,5 +44,7 @@ Route::prefix('admin')->group(function () {
         Route::patch('/donations/{donation:uuid}/reject', [AdminDonationController::class, 'reject']);
         Route::delete('/donations/{donation:uuid}/proof', [AdminDonationController::class, 'deleteProof']);
         Route::get('/stats', DonationStatsController::class);
+        Route::get('/reports/summary', [ReportController::class, 'summary']);
+        Route::get('/reports/donations/export.{format}', [ReportController::class, 'export']);
     });
 });
