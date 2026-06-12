@@ -69,6 +69,8 @@ return [
 
     'timezone' => env('APP_TIMEZONE', 'UTC'),
 
+    'display_timezone' => env('APP_DISPLAY_TIMEZONE', 'Asia/Manila'),
+
     /*
     |--------------------------------------------------------------------------
     | Application Locale Configuration

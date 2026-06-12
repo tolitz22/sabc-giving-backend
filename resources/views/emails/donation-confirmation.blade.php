@@ -3,6 +3,8 @@
     $displayName = $donation->is_anonymous ? 'friend' : $donation->donor_name;
     $statusLabel = $isBankTransfer ? 'Received for review' : 'Received successfully';
     $methodLabel = ucwords(str_replace('_', ' ', $donation->giving_method));
+    $displayTimezone = config('app.display_timezone', 'Asia/Manila');
+    $submittedAt = $donation->created_at->copy()->timezone($displayTimezone)->format('M j, Y g:i A');
 @endphp
 
 @extends('emails.partials.layout', [
@@ -48,7 +50,7 @@
                     </tr>
                     <tr>
                         <td style="padding:14px 18px;color:#52667a;">Date submitted</td>
-                        <td align="right" style="padding:14px 18px;color:#123a5d;font-weight:bold;">{{ $donation->created_at->format('M j, Y g:i A') }}</td>
+                        <td align="right" style="padding:14px 18px;color:#123a5d;font-weight:bold;">{{ $submittedAt }} PHT</td>
                     </tr>
                 </table>
             </td>

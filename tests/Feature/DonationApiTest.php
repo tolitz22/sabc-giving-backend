@@ -200,6 +200,7 @@ class DonationApiTest extends TestCase
             'donor_name' => 'Juan Dela Cruz',
             'amount' => 500,
             'category' => 'Missions',
+            'created_at' => '2026-06-12 11:22:00',
         ]);
 
         $html = (new DonationConfirmationMail($donation))->render();
@@ -208,6 +209,7 @@ class DonationApiTest extends TestCase
         $this->assertStringContainsString('worship, discipleship, missions, and gospel ministry', $html);
         $this->assertStringContainsString('Received for review', $html);
         $this->assertStringContainsString('PHP 500.00', $html);
+        $this->assertStringContainsString('Jun 12, 2026 7:22 PM PHT', $html);
     }
 
     public function test_admin_can_delete_a_proof_without_changing_donation_status(): void
