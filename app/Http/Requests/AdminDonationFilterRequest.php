@@ -21,6 +21,7 @@ class AdminDonationFilterRequest extends FormRequest
             'giving_method' => ['nullable', Rule::in(DonationOptions::METHODS)],
             'date_from' => ['nullable', 'date'],
             'date_to' => ['nullable', 'date', 'after_or_equal:date_from'],
+            'timezone' => ['nullable', 'timezone'],
             'search' => ['nullable', 'string', 'max:255'],
             'per_page' => ['nullable', 'integer', 'min:1', 'max:100'],
         ];

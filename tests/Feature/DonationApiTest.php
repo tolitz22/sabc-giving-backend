@@ -265,6 +265,38 @@ class DonationApiTest extends TestCase
             ->assertJsonPath('data.recent_largest_donations.0.amount', 2500);
     }
 
+    public function test_admin_date_filters_use_requested_timezone_boundaries(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+        Sanctum::actingAs($admin);
+
+        $juneElevenLocal = Donation::factory()->paid()->create([
+            'amount' => 500,
+            'created_at' => '2026-06-11 10:00:00',
+            'paid_at' => '2026-06-11 10:30:00',
+        ]);
+        $juneTwelveLocal = Donation::factory()->paid()->create([
+            'amount' => 900,
+            'created_at' => '2026-06-11 20:19:00',
+            'paid_at' => '2026-06-11 20:30:00',
+        ]);
+
+        $this->getJson('/api/admin/donations?date_from=2026-06-11&date_to=2026-06-11&timezone=Asia/Singapore')
+            ->assertOk()
+            ->assertJsonPath('meta.total', 1)
+            ->assertJsonPath('data.0.uuid', $juneElevenLocal->uuid);
+
+        $this->getJson('/api/admin/donations?date_from=2026-06-12&date_to=2026-06-12&timezone=Asia/Singapore')
+            ->assertOk()
+            ->assertJsonPath('meta.total', 1)
+            ->assertJsonPath('data.0.uuid', $juneTwelveLocal->uuid);
+
+        $this->getJson('/api/admin/stats?date_from=2026-06-12&date_to=2026-06-12&timezone=Asia/Singapore')
+            ->assertOk()
+            ->assertJsonPath('data.total_donations', 1)
+            ->assertJsonPath('data.total_paid_amount', 900);
+    }
+
     public function test_admin_can_download_donation_report_as_csv_and_xlsx(): void
     {
         $admin = User::factory()->create(['role' => 'admin']);

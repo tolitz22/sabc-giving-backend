@@ -12,6 +12,7 @@ use App\Http\Resources\AdminDonationResource;
 use App\Jobs\SendDonationReceiptJob;
 use App\Jobs\SendDonationRejectedJob;
 use App\Models\Donation;
+use App\Support\AdminDonationFilters;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Log;
 
@@ -21,19 +22,7 @@ class DonationController extends Controller
     {
         $data = $request->validated();
 
-        $donations = Donation::query()
-            ->when($data['status'] ?? null, fn ($query, $status) => $query->where('status', $status))
-            ->when($data['category'] ?? null, fn ($query, $category) => $query->where('category', $category))
-            ->when($data['giving_method'] ?? null, fn ($query, $method) => $query->where('giving_method', $method))
-            ->when($data['date_from'] ?? null, fn ($query, $date) => $query->whereDate('created_at', '>=', $date))
-            ->when($data['date_to'] ?? null, fn ($query, $date) => $query->whereDate('created_at', '<=', $date))
-            ->when($data['search'] ?? null, function ($query, $search) {
-                $query->where(function ($inner) use ($search) {
-                    $inner->where('donor_name', 'like', "%{$search}%")
-                        ->orWhere('donor_email', 'like', "%{$search}%")
-                        ->orWhere('gateway_reference', 'like', "%{$search}%");
-                });
-            })
+        $donations = AdminDonationFilters::apply(Donation::query(), $data)
             ->with(['verifier:id,name,email', 'rejecter:id,name,email', 'proofDeleter:id,name,email'])
             ->orderByDesc('id')
             ->paginate($data['per_page'] ?? 15);

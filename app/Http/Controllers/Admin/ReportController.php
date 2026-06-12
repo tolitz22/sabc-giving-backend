@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Constants\DonationOptions;
 use App\Http\Controllers\Controller;
 use App\Models\Donation;
+use App\Support\AdminDonationFilters;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
@@ -103,17 +104,13 @@ class ReportController extends Controller
             'giving_method' => ['nullable', 'in:'.implode(',', DonationOptions::METHODS)],
             'date_from' => ['nullable', 'date'],
             'date_to' => ['nullable', 'date', 'after_or_equal:date_from'],
+            'timezone' => ['nullable', 'timezone'],
         ]);
     }
 
     private function filteredQuery(array $filters): Builder
     {
-        return Donation::query()
-            ->when($filters['status'] ?? null, fn (Builder $query, string $status) => $query->where('status', $status))
-            ->when($filters['category'] ?? null, fn (Builder $query, string $category) => $query->where('category', $category))
-            ->when($filters['giving_method'] ?? null, fn (Builder $query, string $method) => $query->where('giving_method', $method))
-            ->when($filters['date_from'] ?? null, fn (Builder $query, string $date) => $query->whereDate('created_at', '>=', $date))
-            ->when($filters['date_to'] ?? null, fn (Builder $query, string $date) => $query->whereDate('created_at', '<=', $date));
+        return AdminDonationFilters::apply(Donation::query(), $filters);
     }
 
     private function totalsBy(Builder $query, string $column): Collection
