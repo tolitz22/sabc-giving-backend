@@ -2,13 +2,13 @@
 
 namespace App\Jobs;
 
-use App\Mail\BankTransferReceivedMail;
+use App\Mail\DonationConfirmationMail;
 use App\Models\Donation;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Facades\Mail;
 
-class SendBankTransferReceivedJob implements ShouldQueue
+class SendDonationConfirmationJob implements ShouldQueue
 {
     use Queueable;
 
@@ -18,6 +18,6 @@ class SendBankTransferReceivedJob implements ShouldQueue
 
     public function handle(): void
     {
-        Mail::to($this->donation->donor_email)->send(new BankTransferReceivedMail($this->donation));
+        Mail::to($this->donation->donor_email)->send(new DonationConfirmationMail($this->donation));
     }
 }

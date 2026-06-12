@@ -3,9 +3,9 @@
 namespace Tests\Feature;
 
 use App\Constants\DonationOptions;
-use App\Jobs\SendBankTransferReceivedJob;
-use App\Jobs\SendDonationReceiptJob;
+use App\Jobs\SendDonationConfirmationJob;
 use App\Jobs\SendDonationRejectedJob;
+use App\Mail\DonationConfirmationMail;
 use App\Models\BankAccount;
 use App\Models\Donation;
 use App\Models\User;
@@ -56,7 +56,7 @@ class DonationApiTest extends TestCase
         Storage::disk('r2')->assertExists($donation->proof_file_path);
         Storage::disk('r2')->assertMissing('donations/tmp/2026/06/11/019731b9-9b7a-7381-8a08-30cfb74aa5f6.jpg');
         $this->assertNotNull($donation->proof_expires_at);
-        Queue::assertPushed(SendBankTransferReceivedJob::class);
+        Queue::assertPushed(SendDonationConfirmationJob::class);
     }
 
     public function test_bank_transfer_requires_valid_direct_upload_proof_metadata(): void
@@ -149,7 +149,7 @@ class DonationApiTest extends TestCase
             'status' => DonationOptions::STATUS_PAID,
             'gateway_payment_id' => 'pay_123',
         ]);
-        Queue::assertPushed(SendDonationReceiptJob::class);
+        Queue::assertPushed(SendDonationConfirmationJob::class);
     }
 
     public function test_admin_can_list_verify_and_reject_donations(): void
@@ -188,10 +188,26 @@ class DonationApiTest extends TestCase
             'rejected_reason' => 'Reference number could not be matched.',
         ])->assertOk()->assertJsonPath('status', DonationOptions::STATUS_REJECTED);
 
-        Queue::assertPushed(SendDonationReceiptJob::class);
+        Queue::assertNotPushed(SendDonationConfirmationJob::class);
         Queue::assertPushed(SendDonationRejectedJob::class);
         $this->assertNull($verifyDonation->fresh()->proof_file_path);
         $this->assertNull($rejectDonation->fresh()->proof_file_path);
+    }
+
+    public function test_donation_confirmation_email_renders_church_marketing_content(): void
+    {
+        $donation = Donation::factory()->bankTransferUnderReview()->create([
+            'donor_name' => 'Juan Dela Cruz',
+            'amount' => 500,
+            'category' => 'Missions',
+        ]);
+
+        $html = (new DonationConfirmationMail($donation))->render();
+
+        $this->assertStringContainsString('Thank you for giving, Juan Dela Cruz.', $html);
+        $this->assertStringContainsString('worship, discipleship, missions, and gospel ministry', $html);
+        $this->assertStringContainsString('Received for review', $html);
+        $this->assertStringContainsString('PHP 500.00', $html);
     }
 
     public function test_admin_can_delete_a_proof_without_changing_donation_status(): void

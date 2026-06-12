@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Constants\DonationOptions;
-use App\Jobs\SendDonationReceiptJob;
+use App\Jobs\SendDonationConfirmationJob;
 use App\Models\Donation;
 use App\Models\PaymentWebhookLog;
 use App\Services\PaymongoService;
@@ -58,7 +58,7 @@ class PaymongoWebhookController extends Controller
                 if ($donation && $donation->status !== DonationOptions::STATUS_PAID) {
                     $donation->markPaid($event['payment_id'], $event['reference']);
                     $donation->addEvent('payment_paid', 'PayMongo webhook marked donation as paid.', $event);
-                    SendDonationReceiptJob::dispatch($donation);
+                    SendDonationConfirmationJob::dispatch($donation);
                     Log::info('Donation marked paid from PayMongo webhook', ['donation_uuid' => $donation->uuid]);
                 }
             }

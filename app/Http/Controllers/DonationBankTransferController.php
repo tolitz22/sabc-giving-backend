@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Constants\DonationOptions;
 use App\Http\Requests\StoreBankTransferDonationRequest;
-use App\Jobs\SendBankTransferReceivedJob;
+use App\Jobs\SendDonationConfirmationJob;
 use App\Models\BankAccount;
 use App\Models\Donation;
 use App\Services\RecaptchaService;
@@ -58,7 +58,7 @@ class DonationBankTransferController extends Controller
         ])->save();
 
         $donation->addEvent('bank_transfer_submitted', 'Bank transfer proof received for admin review.');
-        SendBankTransferReceivedJob::dispatch($donation);
+        SendDonationConfirmationJob::dispatch($donation);
         Log::info('Bank transfer donation created', ['donation_uuid' => $donation->uuid]);
 
         return response()->json([

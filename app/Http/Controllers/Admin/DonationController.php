@@ -9,7 +9,6 @@ use App\Http\Requests\RejectDonationRequest;
 use App\Http\Requests\VerifyDonationRequest;
 use App\Http\Resources\AdminDonationDetailResource;
 use App\Http\Resources\AdminDonationResource;
-use App\Jobs\SendDonationReceiptJob;
 use App\Jobs\SendDonationRejectedJob;
 use App\Models\Donation;
 use App\Support\AdminDonationFilters;
@@ -94,7 +93,6 @@ class DonationController extends Controller
 
         $donation->addEvent('bank_transfer_verified', 'Bank transfer verified by admin.', ['admin_id' => $request->user()->id]);
         $donation->deleteProofFile($request->user()->id, 'bank_transfer_proof_deleted_after_verification');
-        SendDonationReceiptJob::dispatch($donation);
         Log::info('Bank transfer donation verified', ['donation_uuid' => $donation->uuid, 'admin_id' => $request->user()->id]);
 
         return response()->json(['status' => $donation->status]);

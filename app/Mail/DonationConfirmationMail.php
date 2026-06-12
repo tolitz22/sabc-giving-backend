@@ -7,7 +7,7 @@ use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
 use Illuminate\Queue\SerializesModels;
 
-class DonationReceiptMail extends Mailable
+class DonationConfirmationMail extends Mailable
 {
     use Queueable, SerializesModels;
 
@@ -17,7 +17,7 @@ class DonationReceiptMail extends Mailable
 
     public function build(): self
     {
-        return $this->subject('Your church giving receipt')
-            ->view('emails.donation-receipt');
+        return $this->subject('Thank you for giving to Scripture Alone Baptist Church')
+            ->view('emails.donation-confirmation');
     }
 }
