@@ -29,7 +29,7 @@ class DonationStatsController extends Controller
         $paid = (clone $baseQuery)->where('status', DonationOptions::STATUS_PAID);
         $summary = (clone $baseQuery)
             ->selectRaw('count(*) as total_donations')
-            ->selectRaw('coalesce(sum(case when status = ? then amount else 0 end), 0) as total_paid_amount', [DonationOptions::STATUS_PAID])
+            ->selectRaw('coalesce(sum(case when status = ? then coalesce(gateway_net_amount, amount) else 0 end), 0) as total_paid_amount', [DonationOptions::STATUS_PAID])
             ->selectRaw('sum(case when giving_method = ? and status = ? then 1 else 0 end) as pending_bank_transfers', [
                 DonationOptions::METHOD_BANK_TRANSFER,
                 DonationOptions::STATUS_UNDER_REVIEW,
@@ -49,15 +49,15 @@ class DonationStatsController extends Controller
             'pending_bank_transfers' => (int) $summary->pending_bank_transfers,
             'rejected_donations' => (int) $summary->rejected_donations,
             'totals_by_category' => (clone $paid)
-                ->select('category', DB::raw('sum(amount) as total'), DB::raw('count(*) as count'))
+                ->select('category', DB::raw('sum(coalesce(gateway_net_amount, amount)) as total'), DB::raw('count(*) as count'))
                 ->groupBy('category')
                 ->get(),
             'totals_by_giving_method' => (clone $paid)
-                ->select('giving_method', DB::raw('sum(amount) as total'), DB::raw('count(*) as count'))
+                ->select('giving_method', DB::raw('sum(coalesce(gateway_net_amount, amount)) as total'), DB::raw('count(*) as count'))
                 ->groupBy('giving_method')
                 ->get(),
             'monthly_totals' => (clone $paid)
-                ->select(DB::raw($monthExpression.' as month'), DB::raw('sum(amount) as total'), DB::raw('count(*) as count'))
+                ->select(DB::raw($monthExpression.' as month'), DB::raw('sum(coalesce(gateway_net_amount, amount)) as total'), DB::raw('count(*) as count'))
                 ->groupByRaw($monthExpression)
                 ->orderBy('month')
                 ->get(),

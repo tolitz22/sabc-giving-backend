@@ -35,7 +35,7 @@ class DonationController extends Controller
 
         $summary = Donation::query()
             ->selectRaw('count(*) as total_donations')
-            ->selectRaw('coalesce(sum(case when status = ? then amount else 0 end), 0) as total_paid_amount', [DonationOptions::STATUS_PAID])
+            ->selectRaw('coalesce(sum(case when status = ? then coalesce(gateway_net_amount, amount) else 0 end), 0) as total_paid_amount', [DonationOptions::STATUS_PAID])
             ->selectRaw('sum(case when giving_method = ? and status = ? then 1 else 0 end) as pending_bank_transfers', [
                 DonationOptions::METHOD_BANK_TRANSFER,
                 DonationOptions::STATUS_UNDER_REVIEW,
@@ -46,7 +46,7 @@ class DonationController extends Controller
             ->first();
 
         $latestDonation = Donation::query()
-            ->select(['uuid', 'donor_name', 'is_anonymous', 'amount', 'category', 'giving_method', 'status', 'created_at'])
+            ->select(['uuid', 'donor_name', 'is_anonymous', 'amount', 'gateway_fee_amount', 'gateway_tax_amount', 'gateway_net_amount', 'category', 'giving_method', 'status', 'created_at'])
             ->latest('id')
             ->first();
 
@@ -63,7 +63,11 @@ class DonationController extends Controller
                     'donor_name' => $latestDonation->donor_name,
                     'donor_display_name' => $latestDonation->donorDisplayName(),
                     'is_anonymous' => $latestDonation->is_anonymous,
-                    'amount' => $latestDonation->amount,
+                    'amount' => $latestDonation->netAmount(),
+                    'gross_amount' => $latestDonation->amount,
+                    'gateway_fee_amount' => $latestDonation->gateway_fee_amount,
+                    'gateway_tax_amount' => $latestDonation->gateway_tax_amount,
+                    'gateway_net_amount' => $latestDonation->gateway_net_amount,
                     'category' => $latestDonation->category,
                     'giving_method' => $latestDonation->giving_method,
                     'status' => $latestDonation->status,
@@ -86,6 +90,7 @@ class DonationController extends Controller
 
         $donation->forceFill([
             'status' => DonationOptions::STATUS_PAID,
+            'gateway_net_amount' => $donation->gateway_net_amount ?? $donation->amount,
             'verified_by' => $request->user()->id,
             'verified_at' => now(),
             'paid_at' => $donation->paid_at ?? now(),
@@ -94,6 +99,27 @@ class DonationController extends Controller
         $donation->addEvent('bank_transfer_verified', 'Bank transfer verified by admin.', ['admin_id' => $request->user()->id]);
         $donation->deleteProofFile($request->user()->id, 'bank_transfer_proof_deleted_after_verification');
         Log::info('Bank transfer donation verified', ['donation_uuid' => $donation->uuid, 'admin_id' => $request->user()->id]);
+
+        return response()->json(['status' => $donation->status]);
+    }
+
+    public function settle(VerifyDonationRequest $request, Donation $donation): JsonResponse
+    {
+        abort_unless($donation->gateway === 'paymongo', 422, 'Only PayMongo donations can be settled.');
+        abort_unless($donation->status === DonationOptions::STATUS_AWAITING_SETTLEMENT, 422, 'Only donations awaiting settlement can be marked paid.');
+
+        $donation->forceFill([
+            'status' => DonationOptions::STATUS_PAID,
+            'paid_at' => $donation->paid_at ?? now(),
+        ])->save();
+
+        $donation->addEvent('paymongo_bank_settlement_confirmed', 'PayMongo settlement confirmed by admin.', [
+            'admin_id' => $request->user()->id,
+        ]);
+        Log::info('PayMongo donation marked paid after settlement confirmation', [
+            'donation_uuid' => $donation->uuid,
+            'admin_id' => $request->user()->id,
+        ]);
 
         return response()->json(['status' => $donation->status]);
     }

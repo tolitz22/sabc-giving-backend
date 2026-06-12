@@ -29,6 +29,9 @@ class Donation extends Model
         'gateway_checkout_id',
         'gateway_payment_id',
         'gateway_reference',
+        'gateway_fee_amount',
+        'gateway_tax_amount',
+        'gateway_net_amount',
         'proof_file_path',
         'proof_original_name',
         'proof_mime_type',
@@ -49,6 +52,9 @@ class Donation extends Model
     {
         return [
             'amount' => 'decimal:2',
+            'gateway_fee_amount' => 'decimal:2',
+            'gateway_tax_amount' => 'decimal:2',
+            'gateway_net_amount' => 'decimal:2',
             'metadata' => 'array',
             'is_anonymous' => 'boolean',
             'paid_at' => 'datetime',
@@ -103,13 +109,33 @@ class Donation extends Model
         return $this->is_anonymous ? 'Anonymous donor' : $this->donor_name;
     }
 
-    public function markPaid(?string $paymentId = null, ?string $reference = null): void
+    public function netAmount(): string
+    {
+        return $this->gateway_net_amount ?? $this->amount;
+    }
+
+    public function markPaid(?string $paymentId = null, ?string $reference = null, array $settlement = []): void
     {
         $this->forceFill([
             'status' => DonationOptions::STATUS_PAID,
             'gateway_payment_id' => $paymentId ?? $this->gateway_payment_id,
             'gateway_reference' => $reference ?? $this->gateway_reference,
+            'gateway_fee_amount' => $settlement['fee_amount'] ?? $this->gateway_fee_amount,
+            'gateway_tax_amount' => $settlement['tax_amount'] ?? $this->gateway_tax_amount,
+            'gateway_net_amount' => $settlement['net_amount'] ?? $this->gateway_net_amount,
             'paid_at' => $this->paid_at ?? now(),
+        ])->save();
+    }
+
+    public function markAwaitingSettlement(?string $paymentId = null, ?string $reference = null, array $settlement = []): void
+    {
+        $this->forceFill([
+            'status' => DonationOptions::STATUS_AWAITING_SETTLEMENT,
+            'gateway_payment_id' => $paymentId ?? $this->gateway_payment_id,
+            'gateway_reference' => $reference ?? $this->gateway_reference,
+            'gateway_fee_amount' => $settlement['fee_amount'] ?? $this->gateway_fee_amount,
+            'gateway_tax_amount' => $settlement['tax_amount'] ?? $this->gateway_tax_amount,
+            'gateway_net_amount' => $settlement['net_amount'] ?? $this->gateway_net_amount,
         ])->save();
     }
 

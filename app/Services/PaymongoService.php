@@ -107,6 +107,55 @@ class PaymongoService
             'reference' => data_get($checkoutAttributes, 'reference_number') ?: data_get($checkoutAttributes, 'payments.0.attributes.external_reference_number'),
             'donation_id' => data_get($checkoutAttributes, 'metadata.donation_id'),
             'donation_uuid' => data_get($checkoutAttributes, 'metadata.donation_uuid') ?: data_get($checkoutAttributes, 'reference_number'),
+            'settlement' => $this->parseSettlementAmounts($checkoutAttributes),
         ];
+    }
+
+    private function parseSettlementAmounts(array $checkoutAttributes): array
+    {
+        $payment = data_get($checkoutAttributes, 'payments.0.attributes', []);
+
+        return array_filter([
+            'fee_amount' => $this->centavosToPesos(
+                data_get($payment, 'fee')
+                ?? data_get($payment, 'fees')
+                ?? data_get($payment, 'fee_amount')
+                ?? data_get($payment, 'balance_transaction.attributes.fee')
+                ?? data_get($checkoutAttributes, 'fee')
+                ?? data_get($checkoutAttributes, 'fee_amount')
+            ),
+            'tax_amount' => $this->centavosToPesos(
+                data_get($payment, 'tax')
+                ?? data_get($payment, 'tax_amount')
+                ?? data_get($payment, 'withholding_tax')
+                ?? data_get($payment, 'withholding_tax_amount')
+                ?? data_get($payment, 'balance_transaction.attributes.tax')
+                ?? data_get($payment, 'balance_transaction.attributes.tax_amount')
+                ?? data_get($checkoutAttributes, 'tax')
+                ?? data_get($checkoutAttributes, 'tax_amount')
+                ?? data_get($checkoutAttributes, 'withholding_tax')
+            ),
+            'net_amount' => $this->centavosToPesos(
+                data_get($payment, 'net_amount')
+                ?? data_get($payment, 'net')
+                ?? data_get($payment, 'settlement_amount')
+                ?? data_get($payment, 'converted_net_amount')
+                ?? data_get($payment, 'balance_transaction.attributes.net_amount')
+                ?? data_get($payment, 'balance_transaction.attributes.net')
+                ?? data_get($payment, 'balance_transaction.attributes.converted_net_amount')
+                ?? data_get($checkoutAttributes, 'net_amount')
+                ?? data_get($checkoutAttributes, 'settlement_amount')
+                ?? data_get($checkoutAttributes, 'converted_net_amount')
+            ),
+        ], fn ($value) => $value !== null);
+    }
+
+    private function centavosToPesos(mixed $value): ?float
+    {
+        if (! is_numeric($value)) {
+            return null;
+        }
+
+        return round(((float) $value) / 100, 2);
     }
 }

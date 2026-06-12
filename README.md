@@ -132,7 +132,14 @@ Content-Type: application/json
 }
 ```
 
-Redirect the donor to `checkout_url`. After payment, PayMongo calls `/api/webhooks/paymongo`; the webhook marks the donation as `paid` and dispatches `SendDonationConfirmationJob`.
+Redirect the donor to `checkout_url`. After payment, PayMongo calls `/api/webhooks/paymongo`; the webhook marks PayMongo donations as `awaiting_settlement`, stores available fee/net settlement values, and dispatches `SendDonationConfirmationJob`. This means the donor has paid, but the church bank settlement is not yet confirmed. Once the church bank settlement is confirmed in PayMongo/bank records, an admin can mark the donation paid:
+
+```http
+PATCH /api/admin/donations/{uuid}/settle
+Authorization: Bearer {admin_token}
+```
+
+Admin donation responses show the net received amount as `amount` when PayMongo provides settlement details. The original donor-entered amount remains available as `gross_amount`, with `gateway_fee_amount`, `gateway_tax_amount`, and `gateway_net_amount` included for reconciliation.
 
 ## Railway
 

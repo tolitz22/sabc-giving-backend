@@ -41,6 +41,7 @@ Route::prefix('admin')->group(function () {
         Route::get('/donations/activity', [AdminDonationController::class, 'activity']);
         Route::get('/donations/{donation:uuid}', [AdminDonationController::class, 'show']);
         Route::patch('/donations/{donation:uuid}/verify', [AdminDonationController::class, 'verify']);
+        Route::patch('/donations/{donation:uuid}/settle', [AdminDonationController::class, 'settle']);
         Route::patch('/donations/{donation:uuid}/reject', [AdminDonationController::class, 'reject']);
         Route::delete('/donations/{donation:uuid}/proof', [AdminDonationController::class, 'deleteProof']);
         Route::get('/stats', DonationStatsController::class);

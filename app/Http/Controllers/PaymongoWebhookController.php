@@ -55,11 +55,11 @@ class PaymongoWebhookController extends Controller
                         ->first();
                 }
 
-                if ($donation && $donation->status !== DonationOptions::STATUS_PAID) {
-                    $donation->markPaid($event['payment_id'], $event['reference']);
-                    $donation->addEvent('payment_paid', 'PayMongo webhook marked donation as paid.', $event);
+                if ($donation && ! in_array($donation->status, [DonationOptions::STATUS_AWAITING_SETTLEMENT, DonationOptions::STATUS_PAID], true)) {
+                    $donation->markAwaitingSettlement($event['payment_id'], $event['reference'], $event['settlement']);
+                    $donation->addEvent('payment_awaiting_settlement', 'PayMongo webhook confirmed donor payment; awaiting bank settlement.', $event);
                     SendDonationConfirmationJob::dispatch($donation);
-                    Log::info('Donation marked paid from PayMongo webhook', ['donation_uuid' => $donation->uuid]);
+                    Log::info('Donation marked awaiting settlement from PayMongo webhook', ['donation_uuid' => $donation->uuid]);
                 }
             }
 

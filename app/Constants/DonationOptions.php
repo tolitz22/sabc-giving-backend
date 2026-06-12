@@ -5,6 +5,7 @@ namespace App\Constants;
 final class DonationOptions
 {
     public const STATUS_PENDING = 'pending';
+    public const STATUS_AWAITING_SETTLEMENT = 'awaiting_settlement';
     public const STATUS_PAID = 'paid';
     public const STATUS_FAILED = 'failed';
     public const STATUS_CANCELLED = 'cancelled';
@@ -26,6 +27,7 @@ final class DonationOptions
 
     public const STATUSES = [
         self::STATUS_PENDING,
+        self::STATUS_AWAITING_SETTLEMENT,
         self::STATUS_PAID,
         self::STATUS_FAILED,
         self::STATUS_CANCELLED,

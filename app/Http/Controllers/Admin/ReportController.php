@@ -23,8 +23,8 @@ class ReportController extends Controller
         $paidQuery = (clone $baseQuery)->where('status', DonationOptions::STATUS_PAID);
         $summary = (clone $baseQuery)
             ->selectRaw('count(*) as total_donations')
-            ->selectRaw('coalesce(sum(case when status = ? then amount else 0 end), 0) as total_paid_amount', [DonationOptions::STATUS_PAID])
-            ->selectRaw('avg(case when status = ? then amount else null end) as average_paid_amount', [DonationOptions::STATUS_PAID])
+            ->selectRaw('coalesce(sum(case when status = ? then coalesce(gateway_net_amount, amount) else 0 end), 0) as total_paid_amount', [DonationOptions::STATUS_PAID])
+            ->selectRaw('avg(case when status = ? then coalesce(gateway_net_amount, amount) else null end) as average_paid_amount', [DonationOptions::STATUS_PAID])
             ->selectRaw('sum(case when giving_method = ? and status = ? then 1 else 0 end) as pending_bank_transfers', [
                 DonationOptions::METHOD_BANK_TRANSFER,
                 DonationOptions::STATUS_UNDER_REVIEW,
@@ -52,10 +52,10 @@ class ReportController extends Controller
                 'daily_totals' => $this->dateTotals($paidQuery, 'day'),
                 'anonymous_totals' => $this->anonymousTotals($paidQuery),
                 'recent_largest_donations' => (clone $paidQuery)
-                    ->orderByDesc('amount')
+                    ->orderByRaw('coalesce(gateway_net_amount, amount) desc')
                     ->orderByDesc('paid_at')
                     ->limit(10)
-                    ->get(['uuid', 'donor_name', 'donor_email', 'is_anonymous', 'amount', 'category', 'giving_method', 'status', 'gateway_reference', 'paid_at', 'created_at'])
+                    ->get(['uuid', 'donor_name', 'donor_email', 'is_anonymous', 'amount', 'gateway_fee_amount', 'gateway_tax_amount', 'gateway_net_amount', 'category', 'giving_method', 'status', 'gateway_reference', 'paid_at', 'created_at'])
                     ->map(fn (Donation $donation) => $this->donationRow($donation))
                     ->values(),
             ],
@@ -116,7 +116,7 @@ class ReportController extends Controller
     private function totalsBy(Builder $query, string $column): Collection
     {
         return (clone $query)
-            ->select($column, DB::raw('sum(amount) as total'), DB::raw('count(*) as count'))
+            ->select($column, DB::raw('sum(coalesce(gateway_net_amount, amount)) as total'), DB::raw('count(*) as count'))
             ->groupBy($column)
             ->orderByDesc('total')
             ->get()
@@ -142,7 +142,7 @@ class ReportController extends Controller
 
         return (clone $query)
             ->whereNotNull('paid_at')
-            ->select(DB::raw($expression.' as '.$column), DB::raw('sum(amount) as total'), DB::raw('count(*) as count'))
+            ->select(DB::raw($expression.' as '.$column), DB::raw('sum(coalesce(gateway_net_amount, amount)) as total'), DB::raw('count(*) as count'))
             ->groupByRaw($expression)
             ->orderBy($column)
             ->get()
@@ -157,7 +157,7 @@ class ReportController extends Controller
     private function anonymousTotals(Builder $query): Collection
     {
         return (clone $query)
-            ->select('is_anonymous', DB::raw('sum(amount) as total'), DB::raw('count(*) as count'))
+            ->select('is_anonymous', DB::raw('sum(coalesce(gateway_net_amount, amount)) as total'), DB::raw('count(*) as count'))
             ->groupBy('is_anonymous')
             ->orderBy('is_anonymous')
             ->get()
@@ -176,7 +176,11 @@ class ReportController extends Controller
             'uuid' => $donation->uuid,
             'donor_display_name' => $donation->donorDisplayName(),
             'donor_email' => $donation->is_anonymous ? 'Contact retained privately' : $donation->donor_email,
-            'amount' => (float) $donation->amount,
+            'amount' => (float) $donation->netAmount(),
+            'gross_amount' => (float) $donation->amount,
+            'gateway_fee_amount' => $donation->gateway_fee_amount !== null ? (float) $donation->gateway_fee_amount : null,
+            'gateway_tax_amount' => $donation->gateway_tax_amount !== null ? (float) $donation->gateway_tax_amount : null,
+            'gateway_net_amount' => $donation->gateway_net_amount !== null ? (float) $donation->gateway_net_amount : null,
             'category' => $donation->category,
             'giving_method' => $donation->giving_method,
             'status' => $donation->status,
@@ -192,7 +196,10 @@ class ReportController extends Controller
             'Donation UUID',
             'Donor Display Name',
             'Donor Email',
-            'Amount',
+            'Net Amount',
+            'Gross Amount',
+            'Gateway Fee',
+            'Gateway Tax',
             'Category',
             'Giving Method',
             'Status',
@@ -209,7 +216,10 @@ class ReportController extends Controller
                 $donation->uuid,
                 $donation->donorDisplayName(),
                 $donation->is_anonymous ? 'Contact retained privately' : $donation->donor_email,
+                (string) $donation->netAmount(),
                 (string) $donation->amount,
+                (string) $donation->gateway_fee_amount,
+                (string) $donation->gateway_tax_amount,
                 $donation->category,
                 $donation->giving_method,
                 $donation->status,

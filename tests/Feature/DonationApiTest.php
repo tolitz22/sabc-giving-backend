@@ -120,7 +120,7 @@ class DonationApiTest extends TestCase
         });
     }
 
-    public function test_webhook_marks_donation_as_paid(): void
+    public function test_webhook_marks_paymongo_donation_awaiting_settlement_until_admin_confirms_settlement(): void
     {
         Queue::fake();
         config(['services.paymongo.webhook_secret' => '']);
@@ -128,6 +128,7 @@ class DonationApiTest extends TestCase
         $donation = Donation::factory()->create([
             'gateway' => 'paymongo',
             'gateway_checkout_id' => 'cs_test_123',
+            'amount' => 5000,
             'status' => DonationOptions::STATUS_PENDING,
         ]);
 
@@ -144,7 +145,14 @@ class DonationApiTest extends TestCase
                                 'donation_uuid' => $donation->uuid,
                             ],
                             'payments' => [
-                                ['id' => 'pay_123'],
+                                [
+                                    'id' => 'pay_123',
+                                    'attributes' => [
+                                        'fee' => 19000,
+                                        'withholding_tax' => 0,
+                                        'net_amount' => 476000,
+                                    ],
+                                ],
                             ],
                         ],
                     ],
@@ -155,10 +163,26 @@ class DonationApiTest extends TestCase
         $response->assertOk();
         $this->assertDatabaseHas('donations', [
             'id' => $donation->id,
-            'status' => DonationOptions::STATUS_PAID,
+            'status' => DonationOptions::STATUS_AWAITING_SETTLEMENT,
             'gateway_payment_id' => 'pay_123',
+            'amount' => 5000,
+            'gateway_fee_amount' => 190,
+            'gateway_tax_amount' => 0,
+            'gateway_net_amount' => 4760,
         ]);
         Queue::assertPushed(SendDonationConfirmationJob::class);
+
+        $admin = User::factory()->create(['role' => 'admin']);
+        Sanctum::actingAs($admin);
+
+        $this->patchJson("/api/admin/donations/{$donation->uuid}/settle")
+            ->assertOk()
+            ->assertJsonPath('status', DonationOptions::STATUS_PAID);
+
+        $this->assertDatabaseHas('donations', [
+            'id' => $donation->id,
+            'status' => DonationOptions::STATUS_PAID,
+        ]);
     }
 
     public function test_admin_can_list_verify_and_reject_donations(): void
@@ -280,6 +304,8 @@ class DonationApiTest extends TestCase
 
         Donation::factory()->paid()->create([
             'amount' => 1000,
+            'gateway_fee_amount' => 50,
+            'gateway_net_amount' => 950,
             'category' => 'Missions',
             'giving_method' => DonationOptions::METHOD_CARD,
             'created_at' => '2026-06-05 10:00:00',
@@ -307,8 +333,8 @@ class DonationApiTest extends TestCase
         $this->getJson('/api/admin/reports/summary?date_from=2026-06-01&date_to=2026-06-30&category=Missions')
             ->assertOk()
             ->assertJsonPath('data.total_donations', 3)
-            ->assertJsonPath('data.total_paid_amount', 3500)
-            ->assertJsonPath('data.average_paid_amount', 1750)
+            ->assertJsonPath('data.total_paid_amount', 3450)
+            ->assertJsonPath('data.average_paid_amount', 1725)
             ->assertJsonPath('data.pending_bank_transfers', 1)
             ->assertJsonPath('data.totals_by_category.0.category', 'Missions')
             ->assertJsonPath('data.monthly_totals.0.month', '2026-06')
