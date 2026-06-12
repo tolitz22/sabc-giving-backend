@@ -106,9 +106,18 @@ class DonationApiTest extends TestCase
         $response->assertCreated()->assertJsonPath('checkout_url', 'https://checkout.paymongo.com/test');
         $this->assertDatabaseHas('donations', [
             'donor_email' => 'maria@example.com',
+            'amount' => 750,
             'status' => DonationOptions::STATUS_PENDING,
             'gateway_checkout_id' => 'cs_test_123',
         ]);
+        Http::assertSent(function ($request) {
+            $payload = $request->data();
+
+            return $request->url() === 'https://api.paymongo.com/v2/checkout_sessions'
+                && data_get($payload, 'data.attributes.line_items.0.amount') === 75000
+                && data_get($payload, 'data.attributes.payment_method_types') === ['card']
+                && data_get($payload, 'data.attributes.metadata.donor_email') === 'maria@example.com';
+        });
     }
 
     public function test_webhook_marks_donation_as_paid(): void

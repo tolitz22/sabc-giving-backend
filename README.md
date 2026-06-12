@@ -100,6 +100,40 @@ Admin:
 
 Use the bearer token returned by `/api/admin/login` for admin routes.
 
+### Donor-entered PayMongo checkout amount
+
+For card or e-wallet giving, collect the donation amount in the frontend and create a hosted PayMongo checkout session through this API. Do not create fixed-amount dashboard links when the donor chooses the amount.
+
+```http
+POST /api/donations/checkout
+Content-Type: application/json
+```
+
+```json
+{
+  "donor_name": "Maria Santos",
+  "donor_email": "maria@example.com",
+  "donor_mobile": "09171234567",
+  "amount": 750,
+  "category": "Tithes & Offering",
+  "giving_method": "card",
+  "is_anonymous": false,
+  "note": "Sunday giving"
+}
+```
+
+`amount` is a peso value with up to two decimal places and must be at least `20`. The API stores the donation as `pending`, sends the amount to PayMongo in centavos, and returns a `checkout_url`.
+
+```json
+{
+  "uuid": "019...",
+  "status": "pending",
+  "checkout_url": "https://checkout.paymongo.com/..."
+}
+```
+
+Redirect the donor to `checkout_url`. After payment, PayMongo calls `/api/webhooks/paymongo`; the webhook marks the donation as `paid` and dispatches `SendDonationConfirmationJob`.
+
 ## Railway
 
 The included `Procfile` defines a web process and queue worker. On Railway, set the PHP runtime to 8.2+ and add the environment variables above. Run migrations with:

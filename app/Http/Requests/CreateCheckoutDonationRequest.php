@@ -20,7 +20,7 @@ class CreateCheckoutDonationRequest extends FormRequest
             'donor_email' => ['required', 'email', 'max:255'],
             'donor_mobile' => ['nullable', 'string', 'regex:/^(09|\+639)\d{9}$/'],
             'is_anonymous' => ['sometimes', 'boolean'],
-            'amount' => ['required', 'numeric', 'min:20'],
+            'amount' => ['required', 'numeric', 'min:20', 'regex:/^\d+(\.\d{1,2})?$/'],
             'category' => ['required', Rule::in(DonationOptions::CATEGORIES)],
             'giving_method' => ['required', Rule::in([DonationOptions::METHOD_CARD, DonationOptions::METHOD_EWALLET])],
             'note' => ['nullable', 'string', 'max:1000'],
