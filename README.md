@@ -139,7 +139,7 @@ PATCH /api/admin/donations/{uuid}/settle
 Authorization: Bearer {admin_token}
 ```
 
-Admin donation responses show the net received amount as `amount` when PayMongo provides settlement details. The original donor-entered amount remains available as `gross_amount`, with `gateway_fee_amount`, `gateway_tax_amount`, and `gateway_net_amount` included for reconciliation.
+Admin donation responses show the net received amount as `amount` and `net_received_amount` when PayMongo provides settlement details. The original donor-entered amount remains available as `gross_amount`, with `gateway_fee_amount`, `gateway_tax_amount`, and `gateway_net_amount` included for reconciliation.
 
 ## Railway
 

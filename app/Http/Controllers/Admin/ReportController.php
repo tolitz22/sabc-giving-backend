@@ -178,6 +178,7 @@ class ReportController extends Controller
             'donor_email' => $donation->is_anonymous ? 'Contact retained privately' : $donation->donor_email,
             'amount' => (float) $donation->netAmount(),
             'gross_amount' => (float) $donation->amount,
+            'net_received_amount' => (float) $donation->netAmount(),
             'gateway_fee_amount' => $donation->gateway_fee_amount !== null ? (float) $donation->gateway_fee_amount : null,
             'gateway_tax_amount' => $donation->gateway_tax_amount !== null ? (float) $donation->gateway_tax_amount : null,
             'gateway_net_amount' => $donation->gateway_net_amount !== null ? (float) $donation->gateway_net_amount : null,

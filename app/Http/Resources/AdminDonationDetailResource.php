@@ -19,6 +19,7 @@ class AdminDonationDetailResource extends JsonResource
             'is_anonymous' => $this->is_anonymous,
             'amount' => $this->netAmount(),
             'gross_amount' => $this->amount,
+            'net_received_amount' => $this->netAmount(),
             'category' => $this->category,
             'giving_method' => $this->giving_method,
             'note' => $this->note,

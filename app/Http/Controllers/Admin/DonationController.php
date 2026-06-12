@@ -65,6 +65,7 @@ class DonationController extends Controller
                     'is_anonymous' => $latestDonation->is_anonymous,
                     'amount' => $latestDonation->netAmount(),
                     'gross_amount' => $latestDonation->amount,
+                    'net_received_amount' => $latestDonation->netAmount(),
                     'gateway_fee_amount' => $latestDonation->gateway_fee_amount,
                     'gateway_tax_amount' => $latestDonation->gateway_tax_amount,
                     'gateway_net_amount' => $latestDonation->gateway_net_amount,
