@@ -221,6 +221,31 @@ class DonationApiTest extends TestCase
         $this->assertSame(DonationOptions::STATUS_UNDER_REVIEW, $donation->fresh()->status);
     }
 
+    public function test_treasurer_cannot_delete_a_proof(): void
+    {
+        Storage::fake('r2');
+        config(['filesystems.default' => 'r2']);
+
+        $treasurer = User::factory()->create(['role' => User::ROLE_TREASURER]);
+        Sanctum::actingAs($treasurer);
+
+        Storage::disk('r2')->put('donations/2026/06/treasurer/proof.jpg', 'proof');
+
+        $donation = Donation::factory()->bankTransferUnderReview()->create([
+            'proof_file_path' => 'donations/2026/06/treasurer/proof.jpg',
+            'proof_original_name' => 'proof.jpg',
+            'proof_mime_type' => 'image/jpeg',
+            'proof_size' => 1000,
+            'proof_expires_at' => now()->addDays(14),
+        ]);
+
+        $this->deleteJson("/api/admin/donations/{$donation->uuid}/proof")
+            ->assertForbidden();
+
+        Storage::disk('r2')->assertExists('donations/2026/06/treasurer/proof.jpg');
+        $this->assertSame('donations/2026/06/treasurer/proof.jpg', $donation->fresh()->proof_file_path);
+    }
+
     public function test_admin_report_summary_supports_filters_and_breakdowns(): void
     {
         $admin = User::factory()->create(['role' => 'admin']);

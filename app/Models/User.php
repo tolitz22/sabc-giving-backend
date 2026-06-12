@@ -40,7 +40,6 @@ class User extends Authenticatable
             'donations.view',
             'donations.verify',
             'donations.reject',
-            'donations.delete_proof',
             'proofs.view',
             'audit.view',
         ],
